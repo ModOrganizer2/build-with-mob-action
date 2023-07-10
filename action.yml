@@ -120,6 +120,6 @@ runs:
     - name: Build Plugin Python
       shell: pwsh
       run: |
-        mob -l 5 cmake -c "${{ inputs.mo2-cmake-command }}" vsbuild
+        mob -l 4 cmake -c "${{ inputs.mo2-cmake-command }}" vsbuild
         cmake --build vsbuild --config RelWithDebInfo -j4
       working-directory: ./build/modorganizer_super/${{ github.event.repository.name }}
