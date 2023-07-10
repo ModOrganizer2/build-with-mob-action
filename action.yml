@@ -51,7 +51,7 @@ runs:
         key: ${{ runner.OS }}-mob-cache-${{ hashFiles('mob/.git/refs/heads/master') }}
         restore-keys: |
           ${{ runner.OS }}-mob-cache-
-    - if: steps.cache-mob.outputs.cache-hit != 'true'
+    - if: ${{ steps.cache-mob.outputs.cache-hit != 'true' }}
       name: Build mob
       shell: pwsh
       run: .\mob\bootstrap.ps1
@@ -92,7 +92,7 @@ runs:
         key: ${{ runner.OS }}-mo2-dependencies-${{ hashFiles('mob/.git/refs/heads/master') }}
         restore-keys: |
           ${{ runner.OS }}-mo2-dependencies-
-    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
+    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
       shell: pwsh
       name: Build dependencies with mob
       run: mob.exe -l 4 -d . build ${{ inputs.mo2-third-parties }}
