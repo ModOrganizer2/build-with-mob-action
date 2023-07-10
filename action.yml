@@ -32,6 +32,11 @@ inputs:
     required: false
     default: ""
 
+outputs:
+  working-directory:
+    description: Working directory containing the vsbuild folder.
+    value: ./build/modorganizer_super/${{ github.event.repository.name }}
+
 runs:
   using: "composite"
   steps:
