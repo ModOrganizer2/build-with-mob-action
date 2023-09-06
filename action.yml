@@ -41,11 +41,21 @@ runs:
   using: "composite"
   steps:
     # mob
+    - name: Determine mob branch
+      id: determine-mob-branch
+      shell: sh +e {0}
+      run: |
+        branch=master
+        git ls-remote https://github.com/ModOrganizer2/mob.git ${{ inputs.mo2-branch }}
+        if [ $? -eq 0 ]; then
+          branch=${{ inputs.mo2-branch }}
+        fi
+        echo "branch=${branch}" >> "$GITHUB_OUTPUT"
     - name: Checkout mob
       uses: actions/checkout@v3
       with:
         repository: modorganizer2/mob
-        ref: master
+        ref: ${{ steps.determine-mob-branch.outputs.branch }}
         path: ./mob
     - name: Cache mob
       id: cache-mob
