@@ -63,7 +63,7 @@ runs:
       with:
         path: |
           ./mob/mob.exe
-        key: ${{ runner.OS }}-mob-cache-${{ hashFiles('mob/.git/refs/heads/master') }}
+        key: ${{ runner.OS }}-mob-cache-${{ hashFiles('mob/.git/refs/heads/${{ steps.determine-mob-branch.outputs.branch }}') }}
         restore-keys: |
           ${{ runner.OS }}-mob-cache-
     - if: ${{ steps.cache-mob.outputs.cache-hit != 'true' }}
