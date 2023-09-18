@@ -1,0 +1,11 @@
+---
+dependencies:
+  uibase:
+    - boost
+    - fmt
+    - spdlog
+    - gtest
+
+  game_gamebryo:
+    - lz4
+    - zlib

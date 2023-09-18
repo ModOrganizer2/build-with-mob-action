@@ -108,9 +108,21 @@ runs:
         restore-keys: |
           ${{ runner.OS }}-mo2-dependencies-
     - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
+      id: build-third-party-deps
+      shell: pwsh
+      run: |
+        pip install PyYAML
+        $third_parties = (python ${env:GITHUB_ACTION_PATH}/make-dependencies.py ${{ inputs.mo2-dependencies }})
+        Write-Output "Found third parties dependencies: ${third_parties}"
+        Write-Output "MO2_THIRD_PARTIES=${third_parties}" >> "$env:GITHUB_OUTPUT"
+    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
       shell: pwsh
       name: Build dependencies with mob
-      run: mob.exe -l 4 -d . build ${{ inputs.mo2-third-parties }}
+      run: mob.exe -l 4 -d . build ${{ steps.build-third-party-deps.outputs.MO2_THIRD_PARTIES }} ${{ inputs.mo2-third-parties }}
     - name: Build dependencies log
       uses: actions/upload-artifact@v3
       with:
