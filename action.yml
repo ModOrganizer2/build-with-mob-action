@@ -62,7 +62,7 @@ runs:
       with:
         path: |
           ./mob/mob.exe
-        key: ${{ runner.OS }}-mob-cache-${{ hashFiles('mob/.git/refs/heads/${{ steps.determine-mob-branch.outputs.branch }}') }}
+        key: ${{ runner.OS }}-mob-cache-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
         restore-keys: |
           ${{ runner.OS }}-mob-cache-
     - if: ${{ steps.cache-mob.outputs.cache-hit != 'true' }}
@@ -103,7 +103,7 @@ runs:
         path: |
           ./build
           !./build/modorganizer_super
-        key: ${{ runner.OS }}-mo2-dependencies-${{ hashFiles('mob/.git/refs/heads/master') }}
+        key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
         restore-keys: |
           ${{ runner.OS }}-mo2-dependencies-
     - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
