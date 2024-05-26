@@ -2,7 +2,6 @@
 dependencies:
   uibase:
     - boost
-    - fmt
     - spdlog
     - gtest
 
