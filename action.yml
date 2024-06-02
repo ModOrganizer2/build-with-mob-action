@@ -2,6 +2,10 @@ name: Build with mob
 description: Build ModOrganizer 2 plugins and executables using mob
 
 inputs:
+  mo2-owner:
+    description: Owner to use to build.
+    required: false
+    default: ${{ github.event.pull_request.head.repo.owner.login }}
   mo2-branch:
     description: Branch to build.
     required: false
@@ -132,14 +136,9 @@ runs:
     # MO2 dependencies
     - name: Build MO2 modules
       shell: pwsh
-      run: mob -l 4 -d .
-        -s task/mo_fallback=master -s task/mo_branch=${{ inputs.mo2-branch }}
-        build
-        --ignore-uncommitted-changes
-        --redownload --reextract --reconfigure --rebuild
-        ${{ inputs.mo2-dependencies }}
+      run: '& ${env:GITHUB_ACTION_PATH}/build-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "${{ inputs.mo2-dependencies }}"'
 
-    # Build repository
+    # build repository
     - uses: actions/checkout@v3
       with:
         path: ./build/modorganizer_super/${{ github.event.repository.name }}
