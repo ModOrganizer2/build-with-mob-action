@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory=$true)][String]$DependenciesS
 )
 
-$Dependencies = $($DependenciesS.Split())
+$Dependencies = $DependenciesS.Split()
 
 Write-Host "Initializing repositories with mob... "
 mob -l 4 -d . build `
