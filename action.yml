@@ -69,13 +69,21 @@ runs:
         key: ${{ runner.OS }}-mob-cache-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
         restore-keys: |
           ${{ runner.OS }}-mob-cache-
-    - if: ${{ steps.cache-mob.outputs.cache-hit != 'true' }}
+        save-always: true
+    - if: steps.cache-mob.outputs.cache-hit != 'true'
       name: Build mob
       shell: pwsh
       run: .\mob\bootstrap.ps1
     - name: Add mob to PATH
       shell: pwsh
       run: echo "${{ github.workspace }}/mob" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Save mob to cache
+      if: steps.cache-mob.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          ./mob/mob.exe
+        key: ${{ runner.OS }}-mob-cache-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
 
     # Qt
     - name: Get Qt version
@@ -110,11 +118,11 @@ runs:
         key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
         restore-keys: |
           ${{ runner.OS }}-mo2-dependencies-
-    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
+    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
-    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
+    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
       id: build-third-party-deps
       shell: pwsh
       run: |
@@ -122,10 +130,18 @@ runs:
         $third_parties = (python ${env:GITHUB_ACTION_PATH}/make-dependencies.py ${{ inputs.mo2-dependencies }})
         Write-Output "Found third parties dependencies: ${third_parties}"
         Write-Output "MO2_THIRD_PARTIES=${third_parties}" >> "$env:GITHUB_OUTPUT"
-    - if: ${{ steps.cache-dependencies.outputs.cache-hit != 'true' }}
+    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
       shell: pwsh
       name: Build dependencies with mob
       run: mob.exe -l 4 -d . build ${{ steps.build-third-party-deps.outputs.MO2_THIRD_PARTIES }} ${{ inputs.mo2-third-parties }}
+    - name: Save third-party dependencies to cache
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          ./build
+          !./build/modorganizer_super
+        key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
     - name: Build dependencies log
       uses: actions/upload-artifact@v3
       with:
