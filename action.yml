@@ -5,7 +5,7 @@ inputs:
   mo2-owner:
     description: Owner to use to build.
     required: false
-    default: ${{ github.event.pull_request.head.repo.owner.login }}
+    default: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
   mo2-branch:
     description: Branch to build.
     required: false
