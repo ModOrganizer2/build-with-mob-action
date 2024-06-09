@@ -55,7 +55,9 @@ mob -l 4 -d . build `
     @Dependencies
 
 # handle USVFS (not in modorganizer_super)
-Switch-Branch -Folder (Get-Item "build\usvfs")
+if (Test-Path "build\usvfs") {
+    Switch-Branch -Folder (Get-Item "build\usvfs")
+}
 
 Get-ChildItem "build/modorganizer_super" -Directory -Exclude ".git" | ForEach-Object {
     Switch-Branch -Folder $_
