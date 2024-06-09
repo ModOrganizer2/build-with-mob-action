@@ -5,6 +5,9 @@ dependencies:
     - spdlog
     - gtest
 
+  usvfs:
+    - boost
+
   game_gamebryo:
     - lz4
     - zlib

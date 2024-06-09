@@ -4,6 +4,48 @@ param(
     [Parameter(Mandatory=$true)][String]$DependenciesS
 )
 
+function Switch-Branch {
+    param (
+        [System.IO.FileSystemInfo]$Folder
+    )
+    Push-Location $Folder
+
+    $name = $Folder.Name
+
+    $remote = "origin"
+
+    if ($Owner -ne "ModOrganizer2") {
+
+        $remote = $Owner
+        $url = (git remote -v | Select-String -Raw "ModOrganizer2")[1].Split()[1].Replace("ModOrganizer2", $Owner)
+
+        if (git remote -v | Select-String "$Owner/") {
+            git remote set-url $remote $url
+        }
+        else {
+            git remote add $remote $url
+        }
+
+        # try to fetch
+        git fetch --depth 1 $Owner 2>&1 | Out-Null
+        if ($LASTEXITCODE) {
+            Write-Output ("No remote $remote for $name found, falling back to ModOrganizer2.")
+            $Owner = "ModOrganizer2"
+            $remote = "origin"
+        }
+    }
+
+    git checkout "$remote/$Branch" 2>&1 | Out-Null
+    if ($LASTEXITCODE) {
+        Write-Output "No branch $Owner/$Branch found for $name, staying on current branch."
+    }
+    else {
+        Write-Output "Switch to branch $Owner/$Branch for $name."
+    }
+
+    Pop-Location
+}
+
 $Dependencies = $DependenciesS.Split()
 
 Write-Host "Initializing repositories with mob... "
@@ -12,43 +54,12 @@ mob -l 4 -d . build `
     --redownload --reextract --no-build-task `
     @Dependencies
 
-Push-Location build/modorganizer_super
-Get-ChildItem -Directory -Exclude ".git" | ForEach-Object {
-    Push-Location $_
+# handle USVFS (not in modorganizer_super)
+Switch-Branch -Folder (Get-Item "build\usvfs")
 
-    $name = $_.Name
-
-    $LocalOwner = $Owner
-
-    if ($LocalOwner -ne "ModOrganizer2") {
-        $url = (git remote -v | Select-String -Raw "ModOrganizer2")[1].Split()[1].Replace("ModOrganizer2", $LocalOwner)
-
-        if (git remote -v | Select-String "$LocalOwner") {
-            git remote set-url $LocalOwner $url
-        }
-        else {
-            git remote add $LocalOwner $url
-        }
-
-        # try to fetch
-        git fetch --depth 1 $Owner 2>&1 | Out-Null
-        if ($LASTEXITCODE) {
-            Write-Output ("No remote $LocalOwner for $name found, falling back to ModOrganizer2.")
-            $LocalOwner = "ModOrganizer2"
-        }
-    }
-
-    git checkout "$LocalOwner/$Branch" 2>&1 | Out-Null
-    if ($LASTEXITCODE) {
-        Write-Output "No branch $LocalOwner/$Branch found for $name, staying on current branch."
-    }
-    else {
-        Write-Output "Switch to branch $LocalOwner/$Branch for $name."
-    }
-
-    Pop-Location
+Get-ChildItem "build/modorganizer_super" -Directory -Exclude ".git" | ForEach-Object {
+    Switch-Branch -Folder $_
 }
-Pop-Location
 
 Write-Output "Building dependencies with mob... "
 mob -l 4 -d . build `
