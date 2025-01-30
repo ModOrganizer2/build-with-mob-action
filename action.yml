@@ -143,7 +143,7 @@ runs:
           !./build/modorganizer_super
         key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
     - name: Build dependencies log
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-dependencies-log
         path: |
