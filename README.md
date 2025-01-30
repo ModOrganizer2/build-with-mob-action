@@ -1,6 +1,6 @@
-# Build with `mob` Github Action
+# Build with `mob` GitHub Action
 
-Action to build ModOrganizer 2 components within Github workflows.
+Action to build ModOrganizer 2 components within GitHub workflows.
 
 **Example usage**:
 
