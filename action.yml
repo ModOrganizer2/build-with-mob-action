@@ -165,7 +165,7 @@ runs:
 
     - name: Build MO2 modules
       shell: pwsh
-      run: mob -l 4 -d . build --ignore-uncommitted-changes --no-pull --reconfigure --rebuild ${{ inputs.mo2-dependencies }}
+      run: mob -l 4 -d . build --ignore-uncommitted-changes --no-pull ${{ inputs.mo2-dependencies }}
       env:
         VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
 
