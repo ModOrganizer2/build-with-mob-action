@@ -1,7 +1,7 @@
 param(
-    [Parameter(Mandatory=$true)][String]$Owner,
-    [Parameter(Mandatory=$true)][String]$Branch,
-    [Parameter(Mandatory=$true)][String]$DependenciesS
+    [Parameter(Mandatory = $true)][String]$Owner,
+    [Parameter(Mandatory = $true)][String]$Branch,
+    [Parameter(Mandatory = $true)][String]$DependenciesS
 )
 
 function Switch-Branch {
@@ -63,8 +63,4 @@ Get-ChildItem "build/modorganizer_super" -Directory -Exclude ".git" | ForEach-Ob
     Switch-Branch -Folder $_
 }
 
-Write-Output "Building dependencies with mob... "
-mob -l 4 -d . build `
-    --ignore-uncommitted-changes `
-    --no-pull --reconfigure --rebuild `
-    @Dependencies
+Exit 0

@@ -152,15 +152,36 @@ runs:
           mob.log
 
     # MO2 dependencies
+    - name: Checkout MO2 modules
+      shell: pwsh
+      run: '& ${env:GITHUB_ACTION_PATH}/checkout-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "${{ inputs.mo2-dependencies }}"'
+
+    - name: Restore vcpkg cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg_cache
+        key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
+        restore-keys: vcpkg-
+
     - name: Build MO2 modules
       shell: pwsh
-      run: '& ${env:GITHUB_ACTION_PATH}/build-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "${{ inputs.mo2-dependencies }}"'
+      run: mob -l 4 -d . build --ignore-uncommitted-changes --no-pull --reconfigure --rebuild ${{ inputs.mo2-dependencies }}
+      env:
+        VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
+
+    # TODO: move this later to cache dependencies from the repository itself (only
+    # needed once MO2 repository move to VCPKG and this action is used)
+    - name: Save vcpkg cache
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg_cache
+        key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
 
     # build repository
     - uses: actions/checkout@v3
       with:
         path: ./build/modorganizer_super/${{ github.event.repository.name }}
-    - name: Build Plugin Python
+    - name: Build Repository
       shell: pwsh
       run: |
         mob -l 4 cmake -c "${{ inputs.mo2-cmake-command }}" vsbuild
