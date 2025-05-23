@@ -10,27 +10,18 @@ inputs:
     description: Branch to build.
     required: false
     default: ${{ github.head_ref || github.ref_name }}
-  mo2-third-parties:
-    description: List of third-party dependencies to build (including USVFS).
-    required: false
-    default: ""
   mo2-dependencies:
     description: List of MO2 dependencies to build.
     required: false
     default: ""
-  mo2-cmake-command:
-    description: MO2 CMake command to run.
+  mo2-skip-build:
+    description: Whether to skip build of the repository (after configure).
     required: false
-    default: ".."
+    default: "false"
   qt-install:
     description: Whether to install Qt or not.
     required: false
     default: "true"
-  # TODO: extract this from mob
-  qt-version:
-    description: Override Qt version to install.
-    required: false
-    default: ""
   qt-modules:
     description: List of Qt modules to install.
     required: false
@@ -39,12 +30,12 @@ inputs:
 outputs:
   working-directory:
     description: Working directory containing the vsbuild folder.
-    value: ./build/modorganizer_super/${{ github.event.repository.name }}
+    value: ./build/${{ github.event.repository.name }}
 
 runs:
   using: "composite"
   steps:
-    # mob
+    # Qt version
     - name: Determine mob branch
       id: determine-mob-branch
       shell: bash
@@ -54,36 +45,10 @@ runs:
           branch=${{ inputs.mo2-branch }}
         fi
         echo "branch=${branch}" >> "$GITHUB_OUTPUT"
-    - name: Checkout mob
-      uses: actions/checkout@v3
-      with:
-        repository: modorganizer2/mob
-        ref: ${{ steps.determine-mob-branch.outputs.branch }}
-        path: ./mob
-    - name: Cache mob
-      id: cache-mob
-      uses: actions/cache@v3
-      with:
-        path: |
-          ./mob/mob.exe
-        key: ${{ runner.OS }}-mob-cache-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
-        restore-keys: |
-          ${{ runner.OS }}-mob-cache-
-        save-always: true
-    - if: steps.cache-mob.outputs.cache-hit != 'true'
-      name: Build mob
+    - name: Checkout mob.ini
       shell: pwsh
-      run: .\mob\bootstrap.ps1
-    - name: Add mob to PATH
-      shell: pwsh
-      run: echo "${{ github.workspace }}/mob" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    - name: Save mob to cache
-      if: steps.cache-mob.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          ./mob/mob.exe
-        key: ${{ runner.OS }}-mob-cache-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
+      run: |
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ModOrganizer2/mob/refs/heads/${{ steps.determine-mob-branch.outputs.branch }}/mob.ini" -OutFile ${{ github.workspace }}/mob.ini
 
     # Qt
     - name: Get Qt version
@@ -92,7 +57,7 @@ runs:
       run: |
         $version = "${{ inputs.qt-version }}"
         if (!$version) {
-          $version = (Get-Content "${{ github.workspace }}\mob\mob.ini" | Select-String -Raw "^qt\s+=").Split("= ")[1]
+          $version = (Get-Content "${{ github.workspace }}/mob.ini" | Select-String -Raw "^qt\s+=").Split("= ")[1]
         }
         Write-Output "Found Qt Version: $version"
         Write-Output "QT_VERSION=$version" >> "$env:GITHUB_OUTPUT"
@@ -107,54 +72,22 @@ runs:
         cache: true
     - name: Add Qt bins to PATH
       shell: pwsh
-      run: echo "${QT_ROOT_DIR }/msvc2022_64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      run: echo "${QT_ROOT_DIR}/msvc2022_64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    # Third-Party dependencies
-    - name: Cache third-party dependencies
-      id: cache-dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ./build
-          !./build/modorganizer_super
-        key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
-        restore-keys: |
-          ${{ runner.OS }}-mo2-dependencies-
-    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      id: build-third-party-deps
-      shell: pwsh
+    # set VCPKG Root
+    - name: "Set environmental variables"
+      shell: bash
       run: |
-        pip install PyYAML
-        $third_parties = (python ${env:GITHUB_ACTION_PATH}/make-dependencies.py ${{ inputs.mo2-dependencies }})
-        Write-Output "Found third parties dependencies: ${third_parties}"
-        Write-Output "MO2_THIRD_PARTIES=${third_parties}" >> "$env:GITHUB_OUTPUT"
-    - if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      shell: pwsh
-      name: Build dependencies with mob
-      run: mob.exe -l 4 -d . build ${{ steps.build-third-party-deps.outputs.MO2_THIRD_PARTIES }} ${{ inputs.mo2-third-parties }}
-    - name: Save third-party dependencies to cache
-      if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          ./build
-          !./build/modorganizer_super
-        key: ${{ runner.OS }}-mob-dependencies-${{ hashFiles(format('{0}/{1}', './mob/.git/refs/heads/', steps.determine-mob-branch.outputs.branch)) }}
-    - name: Build dependencies log
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-dependencies-log
-        path: |
-          mob.log
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
     # MO2 dependencies
     - name: Checkout MO2 modules
       shell: pwsh
-      run: '& ${env:GITHUB_ACTION_PATH}/checkout-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "${{ inputs.mo2-dependencies }}"'
+      run: '& ${env:GITHUB_ACTION_PATH}/checkout-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "cmake_common ${{ inputs.mo2-dependencies }}"'
+
+    - uses: actions/checkout@v3
+      with:
+        path: ./build/${{ github.event.repository.name }}
 
     - name: Restore vcpkg cache
       uses: actions/cache/restore@v4
@@ -163,14 +96,28 @@ runs:
         key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
         restore-keys: vcpkg-
 
-    - name: Build MO2 modules
+    - name: Configure & Build MO2 dependencies
       shell: pwsh
-      run: mob -l 4 -d . build --ignore-uncommitted-changes --no-pull ${{ inputs.mo2-dependencies }}
+      run: |
+        $prefix = "${env:QT_ROOT_DIR}\msvc2022_64;${{ github.workspace }}\build\cmake_common;${{ github.workspace }}\install\lib\cmake"
+        $install = "${{ github.workspace }}\install"
+        Get-ChildItem build -Directory -Exclude ".git", "cmake_common", "${{ github.event.repository.name }}" | ForEach-Object {
+          $preset = "vs2022-windows"
+          if ($_.Name -eq "usvfs") {
+            # there should be no reason to build x86 for CI
+            $preset = "vs2022-windows-x64"
+          }
+          Push-Location $_
+          cmake --preset $preset "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=OFF"
+          cmake --build --preset $preset --target INSTALL
+          Pop-Location
+        }
+        Push-Location build/${{ github.event.repository.name }}
+        cmake --preset vs2022-windows "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=ON"
+        Pop-Location
       env:
         VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
 
-    # TODO: move this later to cache dependencies from the repository itself (only
-    # needed once MO2 repository move to VCPKG and this action is used)
     - name: Save vcpkg cache
       uses: actions/cache/save@v4
       with:
@@ -178,12 +125,9 @@ runs:
         key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
 
     # build repository
-    - uses: actions/checkout@v3
-      with:
-        path: ./build/modorganizer_super/${{ github.event.repository.name }}
     - name: Build Repository
+      if: inputs.mo2-skip-build != 'true'
       shell: pwsh
       run: |
-        mob -l 4 cmake -c "${{ inputs.mo2-cmake-command }}" vsbuild
-        cmake --build vsbuild --config RelWithDebInfo -j4
-      working-directory: ./build/modorganizer_super/${{ github.event.repository.name }}
+        cmake --build --preset vs2022-windows --config RelWithDebInfo -j4
+      working-directory: ./build/${{ github.event.repository.name }}
