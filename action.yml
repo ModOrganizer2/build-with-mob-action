@@ -78,7 +78,7 @@ runs:
     - name: "Set environmental variables"
       shell: bash
       run: |
-          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
+        echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
     # MO2 dependencies
     - name: Checkout MO2 modules
@@ -109,7 +109,7 @@ runs:
           }
           Push-Location $_
           cmake --preset $preset "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=OFF"
-          cmake --build --preset $preset --target INSTALL
+          cmake --build --preset $preset --config RelWithDebInfo --target INSTALL
           Pop-Location
         }
         Push-Location build/${{ github.event.repository.name }}
