@@ -102,6 +102,7 @@ runs:
         $prefix = "${env:QT_ROOT_DIR}\msvc2022_64;${{ github.workspace }}\build\cmake_common;${{ github.workspace }}\install\lib\cmake"
         $install = "${{ github.workspace }}\install"
         Get-ChildItem build -Directory -Exclude ".git", "cmake_common", "${{ github.event.repository.name }}" | ForEach-Object {
+          Write-Output "Building $_... "
           $preset = "vs2022-windows"
           if ($_.Name -eq "usvfs") {
             # there should be no reason to build x86 for CI
