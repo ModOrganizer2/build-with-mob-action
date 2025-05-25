@@ -85,17 +85,6 @@ runs:
       shell: pwsh
       run: '& ${env:GITHUB_ACTION_PATH}/checkout-mo2-dependencies.ps1 -Owner ${{ inputs.mo2-owner }} -Branch ${{ inputs.mo2-branch }} "cmake_common ${{ inputs.mo2-dependencies }}"'
 
-    - uses: actions/checkout@v3
-      with:
-        path: ./build/${{ github.event.repository.name }}
-
-    - name: Restore vcpkg cache
-      uses: actions/cache/restore@v4
-      with:
-        path: ${{ github.workspace }}/vcpkg_cache
-        key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
-        restore-keys: vcpkg-
-
     - name: Configure & Build MO2 dependencies
       shell: pwsh
       run: |
@@ -113,17 +102,21 @@ runs:
           cmake --build --preset $preset --config RelWithDebInfo --target INSTALL
           Pop-Location
         }
+      env:
+        VCPKG_BINARY_SOURCES: clear;x-azblob,${{ vars.AZ_BLOB_VCPKG_URL }},${{ secrets.AZ_BLOB_SAS }},readwrite
+
+    - uses: actions/checkout@v3
+      with:
+        path: ./build/${{ github.event.repository.name }}
+
+    - name: Configure Repository
+      shell: pwsh
+      run: |
         Push-Location build/${{ github.event.repository.name }}
         cmake --preset vs2022-windows "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=ON"
         Pop-Location
       env:
-        VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
-
-    - name: Save vcpkg cache
-      uses: actions/cache/save@v4
-      with:
-        path: ${{ github.workspace }}/vcpkg_cache
-        key: vcpkg-${{ hashFiles('build/**/vcpkg*.json') }}
+        VCPKG_BINARY_SOURCES: clear;x-azblob,${{ vars.AZ_BLOB_VCPKG_URL }},${{ secrets.SAS }},readwrite
 
     # build repository
     - name: Build Repository
