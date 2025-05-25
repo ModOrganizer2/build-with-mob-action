@@ -32,6 +32,12 @@ inputs:
     default: ""
 
 outputs:
+  cmake-prefix-path:
+    description: Value of the CMAKE_PREFIX_PATH variable used when configuring.
+    value: ${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}
+  cmake-install-path:
+    description: Value of the CMAKE_INSTALL_PREFIX variable used when configuring.
+    value: ${{ steps.set-cmake-paths.outputs.cmake-install-path }}
   working-directory:
     description: Working directory containing the vsbuild folder.
     value: ./build/${{ github.event.repository.name }}
@@ -84,6 +90,14 @@ runs:
       run: |
         echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
 
+    # set CMake install and prefix
+    - name: "Set CMAKE_PREFIX_PATH and CMAKE_INSTALL_PATH"
+      id: set-cmake-paths
+      shell: bash
+      run: |
+        echo "cmake-prefix-path=${QT_ROOT_DIR}\msvc2022_64;${{ github.workspace }}\build\cmake_common;${{ github.workspace }}\install\lib\cmake" >> $GITHUB_OUTPUT
+        echo "cmake-install-path=${{ github.workspace }}\install" >> $GITHUB_OUTPUT
+
     # MO2 dependencies
     - name: Checkout MO2 modules
       shell: pwsh
@@ -92,8 +106,6 @@ runs:
     - name: Configure & Build MO2 dependencies
       shell: pwsh
       run: |
-        $prefix = "${env:QT_ROOT_DIR}\msvc2022_64;${{ github.workspace }}\build\cmake_common;${{ github.workspace }}\install\lib\cmake"
-        $install = "${{ github.workspace }}\install"
         Get-ChildItem build -Directory -Exclude ".git", "cmake_common", "${{ github.event.repository.name }}" | ForEach-Object {
           Write-Output "Building $_... "
           $preset = "vs2022-windows"
@@ -102,7 +114,10 @@ runs:
             $preset = "vs2022-windows-x64"
           }
           Push-Location $_
-          cmake --preset $preset "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=OFF"
+          cmake --preset $preset `
+            "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
+            "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
+            "-DBUILD_TESTING=OFF"
           cmake --build --preset $preset --config RelWithDebInfo --target INSTALL
           Pop-Location
         }
@@ -116,7 +131,10 @@ runs:
       shell: pwsh
       run: |
         Push-Location build/${{ github.event.repository.name }}
-        cmake --preset vs2022-windows "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=ON"
+        cmake --preset vs2022-windows `
+          "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
+          "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
+          "-DBUILD_TESTING=ON"
         Pop-Location
 
     # build repository
