@@ -14,6 +14,10 @@ inputs:
     description: List of MO2 dependencies to build.
     required: false
     default: ""
+  mo2-skip-configure:
+    description: Whether to skip configure of the repository.
+    required: false
+    default: "false"
   mo2-skip-build:
     description: Whether to skip build of the repository (after configure).
     required: false
@@ -110,13 +114,14 @@ runs:
         path: ./build/${{ github.event.repository.name }}
 
     - name: Configure Repository
+      if: inputs.mo2-skip-configure != 'true'
       shell: pwsh
       run: |
         Push-Location build/${{ github.event.repository.name }}
         cmake --preset vs2022-windows "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_INSTALL_PREFIX=$install" "-DBUILD_TESTING=ON"
         Pop-Location
       env:
-        VCPKG_BINARY_SOURCES: clear;x-azblob,${{ vars.AZ_BLOB_VCPKG_URL }},${{ secrets.SAS }},readwrite
+        VCPKG_BINARY_SOURCES: clear;x-azblob,${{ vars.AZ_BLOB_VCPKG_URL }},${{ secrets.AZ_BLOB_SAS }},readwrite
 
     # build repository
     - name: Build Repository
