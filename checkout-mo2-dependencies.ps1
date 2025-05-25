@@ -43,6 +43,8 @@ function Switch-Branch {
         Write-Output "Switch to branch $Owner/$Branch for $name."
     }
 
+    $global:LASTEXITCODE = $null
+
     Pop-Location
 }
 
