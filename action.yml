@@ -114,19 +114,19 @@ runs:
               "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
               "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
               "-DBUILD_TESTING=OFF"
-            cmake --build --preset vs2022-windows-x64 --config RelWithDebInfo --target INSTALL
+            cmake --build --preset vs2022-windows-x64 --config RelWithDebInfo --target INSTALL --parallel 16
             cmake --preset vs2022-windows-x86 `
               "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
               "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
               "-DBUILD_TESTING=OFF"
-            cmake --build --preset vs2022-windows-x86 --config RelWithDebInfo --target INSTALL
+            cmake --build --preset vs2022-windows-x86 --config RelWithDebInfo --target INSTALL --parallel 16
           }
           else {
             cmake --preset vs2022-windows `
               "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
               "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
               "-DBUILD_TESTING=OFF"
-            cmake --build --preset vs2022-windows --config RelWithDebInfo --target INSTALL
+            cmake --build --preset vs2022-windows --config RelWithDebInfo --target INSTALL --parallel 16
           }
           Pop-Location
         }
@@ -151,5 +151,5 @@ runs:
       if: inputs.mo2-skip-build != 'true'
       shell: pwsh
       run: |
-        cmake --build --preset vs2022-windows --config RelWithDebInfo -j4
+        cmake --build --preset vs2022-windows --config RelWithDebInfo --parallel 16
       working-directory: ./build/${{ github.event.repository.name }}
