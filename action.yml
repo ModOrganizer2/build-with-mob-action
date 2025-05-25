@@ -108,17 +108,26 @@ runs:
       run: |
         Get-ChildItem build -Directory -Exclude ".git", "cmake_common", "${{ github.event.repository.name }}" | ForEach-Object {
           Write-Output "Building $_... "
-          $preset = "vs2022-windows"
-          if ($_.Name -eq "usvfs") {
-            # there should be no reason to build x86 for CI
-            $preset = "vs2022-windows-x64"
-          }
           Push-Location $_
-          cmake --preset $preset `
-            "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
-            "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
-            "-DBUILD_TESTING=OFF"
-          cmake --build --preset $preset --config RelWithDebInfo --target INSTALL
+          if ($_.Name -eq "usvfs") {
+            cmake --preset vs2022-windows-x64 `
+              "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
+              "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
+              "-DBUILD_TESTING=OFF"
+            cmake --build --preset vs2022-windows-x64 --config RelWithDebInfo --target INSTALL
+            cmake --preset vs2022-windows-x86 `
+              "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
+              "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
+              "-DBUILD_TESTING=OFF"
+            cmake --build --preset vs2022-windows-x86 --config RelWithDebInfo --target INSTALL
+          }
+          else {
+            cmake --preset vs2022-windows `
+              "-DCMAKE_PREFIX_PATH=${{ steps.set-cmake-paths.outputs.cmake-prefix-path }}" `
+              "-DCMAKE_INSTALL_PREFIX=${{ steps.set-cmake-paths.outputs.cmake-install-path }}" `
+              "-DBUILD_TESTING=OFF"
+            cmake --build --preset vs2022-windows --config RelWithDebInfo --target INSTALL
+          }
           Pop-Location
         }
 
