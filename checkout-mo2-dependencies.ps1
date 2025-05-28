@@ -43,24 +43,29 @@ function Switch-Branch {
         Write-Output "Switch to branch $Owner/$Branch for $name."
     }
 
+    $global:LASTEXITCODE = $null
+
     Pop-Location
 }
 
-$Dependencies = $DependenciesS.Split()
+$simpleRepositoryNames = @("usvfs", "cmake_common")
 
-Write-Host "Initializing repositories with mob... "
-mob -l 4 -d . build `
-    --ignore-uncommitted-changes `
-    --redownload --reextract --no-build-task `
-    @Dependencies
+New-Item -Path "build" -ItemType Directory -Force | Out-Null
+Push-Location "build"
 
-# handle USVFS (not in modorganizer_super)
-if (Test-Path "build\usvfs") {
-    Switch-Branch -Folder (Get-Item "build\usvfs")
+Write-Host "Initializing repositories... "
+$DependenciesS.Split() | Select-Object -Unique | ForEach-Object {
+    $fullname = $_
+    if (!($simpleRepositoryNames -contains $fullname)) {
+        $fullname = "modorganizer-$fullname"
+    }
+    git clone "https://github.com/ModOrganizer2/$fullname.git" $_
 }
 
-Get-ChildItem "build/modorganizer_super" -Directory -Exclude ".git" | ForEach-Object {
+Write-Host "Switching branches... "
+Get-ChildItem -Directory -Exclude ".git" | ForEach-Object {
+    Write-Host "Switching branch for $($_.Name)..."
     Switch-Branch -Folder $_
 }
 
-Exit 0
+Pop-Location
