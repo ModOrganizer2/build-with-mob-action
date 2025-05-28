@@ -14,6 +14,10 @@ inputs:
     description: List of MO2 dependencies to build.
     required: false
     default: ""
+  mo2-skip-checkout:
+    description: Whether to skip checkout of the repository.
+    required: false
+    default: "false"
   mo2-skip-configure:
     description: Whether to skip configure of the repository.
     required: false
@@ -132,11 +136,12 @@ runs:
         }
 
     - uses: actions/checkout@v3
+      if: inputs.mo2-skip-checkout != 'true'
       with:
         path: ./build/${{ github.event.repository.name }}
 
     - name: Configure Repository
-      if: inputs.mo2-skip-configure != 'true'
+      if: inputs.mo2-skip-checkout != 'true' && inputs.mo2-skip-configure != 'true'
       shell: pwsh
       run: |
         Push-Location build/${{ github.event.repository.name }}
@@ -148,7 +153,7 @@ runs:
 
     # build repository
     - name: Build Repository
-      if: inputs.mo2-skip-build != 'true'
+      if: inputs.mo2-skip-checkout != 'true' && inputs.mo2-skip-configure != 'true' && inputs.mo2-skip-build != 'true'
       shell: pwsh
       run: |
         cmake --build --preset vs2022-windows --config RelWithDebInfo --parallel 16
